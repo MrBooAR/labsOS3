@@ -49,6 +49,14 @@ struct UsefulData {
 };
 bool* is_processing;
 vector<UsefulData> data;
+void fout(int* arr, int size) {
+    EnterCriticalSection(&cs);
+    for (int i = 0; i < size; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+    LeaveCriticalSection(&cs);
+}
 int main() {
     vector<UsefulData> data;
     srand(time(0));
@@ -80,5 +88,29 @@ int main() {
         is_processing[i] = true;
         data.push_back(*tmp);
     }
+    InitializeCriticalSection(&cs);
+    int finish;
+    int processing_counter = 0;
+    while (processing_counter != marker_size) {
+        WaitForMultipleObjects(marker_size, &threads_events[0], TRUE, INFINITE);
+        fout(arr, size);
+        cout << "Which threed should finish work:";
+        cout << endl;
+        cin >> finish;
+        if (is_processing[finish] == true) {
+            is_processing[finish - 1] = false;
+            SetEvent(data[finish - 1].events[1]);
+            WaitForSingleObject(threads_array[finish - 1], INFINITE);
+            processing_counter++;
+            fout(arr, size);
+            for (int i = 0; i < marker_size; i++) {
+                if (!is_processing[i]) {
+                    ResetEvent(threads_events[i]);
+                    SetEvent(data[i].events[0]);
+                }
+            }
+        }
+    }
+    DeleteCriticalSection(&cs);
     return 0;
 }
