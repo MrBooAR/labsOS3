@@ -1,0 +1,36 @@
+#include <iostream>
+#include <windows.h>
+#include <process.h>
+#include <vector>
+using namespace std;
+HANDLE _begin;
+struct UsefulData {
+    int size;
+    int* arr;
+    int number;
+    HANDLE events[2];
+    UsefulData(int size1, int* arr1, int number1) : size(size1), arr(arr1), number(number1) {
+        events[0] = CreateEvent(NULL, FALSE, FALSE, NULL);
+        events[1] = CreateEvent(NULL, FALSE, FALSE, NULL);
+    }
+};
+bool* is_processing;
+vector<UsefulData> data;
+int main() {
+    vector<UsefulData> data;
+    srand(time(0));
+    int size;
+    int* arr;
+    _begin = CreateEvent(NULL, TRUE, FALSE, NULL);
+    cout << "Enter array size: \n";
+    cin >> size;
+    arr = new int[size];
+    for (int i = 0; i < size; i++) {
+        arr[i] = 0;
+    }
+    int marker_size;
+    cout << "Enter number of threads: \n";
+    cin >> marker_size;
+    is_processing = new bool[marker_size];
+    return 0;
+}
