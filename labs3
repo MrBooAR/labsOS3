@@ -3,7 +3,40 @@
 #include <process.h>
 #include <vector>
 using namespace std;
+CRITICAL_SECTION cs;
+vector<HANDLE> threads_array;
+vector<HANDLE> threads_events;
 HANDLE _begin;
+UINT WINAPI marker(void* p) {
+    UsefulData* args = static_cast<UsefulData*>(p);
+    cout << "Signal of thread";
+    WaitForSingleObject(_begin, INFINITE);
+    vector<int> changed;
+    srand(args->number);
+    while (true) {
+        EnterCriticalSection(&cs);
+        int i = rand() % args->number;
+        if (args->arr[i] == 0) {
+            Sleep(5);
+            args->arr[i] = args->number;
+            changed.push_back(i);
+            Sleep(5);
+        }
+        else {
+            cout << "Thread " << args->number << " Marked " << changed.size() << " Unable to mark " << i;
+            LeaveCriticalSection(&cs);
+            SetEvent(threads_events[args->number - 1]);
+            if (WaitForMultipleObjects(2, args->events, FALSE, INFINITE) - WAIT_OBJECT_0 == 1) {
+                for (int j = 0;j < changed.size();j++) {
+                    args->arr[j] = 0;
+                }
+                break;
+            }
+        }
+        LeaveCriticalSection(&cs);
+    }
+    return 0;
+}
 struct UsefulData {
     int size;
     int* arr;
@@ -32,5 +65,20 @@ int main() {
     cout << "Enter number of threads: \n";
     cin >> marker_size;
     is_processing = new bool[marker_size];
+    HANDLE _Thread;
+    for (int i = 0; i < marker_size; i++) {
+        UsefulData* tmp = new UsefulData(size, arr, i + 1);
+        _Thread = (HANDLE)_beginthreadex(NULL, 0, marker, tmp, 0, NULL);
+        if (_Thread == NULL) {
+            cout << "Process wasn't build;\n";
+            return GetLastError();
+        }
+        threads_events.push_back(CreateEvent(NULL, TRUE, FALSE, NULL));
+        if (threads_events[i] == NULL) {
+            return GetLastError();
+        }
+        is_processing[i] = true;
+        data.push_back(*tmp);
+    }
     return 0;
 }
